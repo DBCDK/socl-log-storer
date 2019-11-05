@@ -283,7 +283,13 @@ def main():
                 continue
             if "distrib=false" in message:
                 verbose("Skipping entry where message contains distrib=false: '" + message + "'")
+                continue
+            # We also skip lines that does not have a webapp=/solr entry
+            if not "webapp=/solr" in message:
+                verbose("Skipping entry where message does not contain webapp=/solr: '" + message + "'")
+                continue
 
+            # Extract the timestamp and other fields.
             try:
                 timestamp = blob["timestamp"]
             except KeyError as e:
@@ -291,6 +297,13 @@ def main():
                 error("Error message was: " + e.message)
                 error("Line is ignored!")
                 continue
+
+            # Need to
+            # a: Parse the other fields - note, sometimes hits are not present, etc.
+            # b: Find an appId, if present, otherwise, set it to "" (empty string)
+            # c: Calculate startime
+            # d: Write to files
+            # e: split files
 
             debug("Need to store: " + timestamp + ": " + message)
 
