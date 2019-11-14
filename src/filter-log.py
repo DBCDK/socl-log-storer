@@ -299,9 +299,9 @@ def main():
                 continue
 
             # Need to
-            # a: Parse the other fields - note, sometimes hits are not present, etc.
-            # b: Find an appId, if present, otherwise, set it to "" (empty string)
-            # c: Calculate startime
+            # a: Parse the other fields in the message field - note, sometimes hits are not present, etc.
+            # b: Find an appId in the url field (name?), if present, otherwise, set it to "" (empty string)
+            # c: Calculate startime, from timestamp - QTime (qtime is in ms)
             # d: Write to files
             # e: split files
 
