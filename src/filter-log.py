@@ -7,6 +7,7 @@ import argparse
 import code
 import datetime
 import json
+import os
 import re
 import signal
 import sys
@@ -254,6 +255,8 @@ def main():
               + ", folder: " + str(args.folder)
               )
 
+        message_rx = re.compile("\s+")
+        output_file = None
         for line in fileinput.input('-'):
 
             try:
@@ -274,13 +277,14 @@ def main():
 
             # For now, extract
             # We only keep lines that does not have "distrib=false" in the message
-            try:
-                message = blob["message"]
-            except KeyError as e:
+            if not "message" in blob:
                 error("A message was not found in the json string: '" + line + "'")
                 error("Error message was: " + e.message)
                 error("Line is ignored!")
                 continue
+
+            message = blob["message"]
+
             if "distrib=false" in message:
                 verbose("Skipping entry where message contains distrib=false: '" + message + "'")
                 continue
@@ -290,22 +294,113 @@ def main():
                 continue
 
             # Extract the timestamp and other fields.
-            try:
-                timestamp = blob["timestamp"]
-            except KeyError as e:
+            if not "timestamp" in blob:
                 error("A timestamp was not found in the json string: '" + line + "'")
                 error("Error message was: " + e.message)
                 error("Line is ignored!")
                 continue
+            timestamp = blob["timestamp"]
 
             # Need to
             # a: Parse the other fields in the message field - note, sometimes hits are not present, etc.
-            # b: Find an appId in the url field (name?), if present, otherwise, set it to "" (empty string)
-            # c: Calculate startime, from timestamp - QTime (qtime is in ms)
-            # d: Write to files
-            # e: split files
+            try:
+                #debug("Message " + message)
 
-            debug("Need to store: " + timestamp + ": " + message)
+                # TODO split does not handle spaces inside params e.g. params value for path=/update calls
+                # TODO optional: move before distrib=false test. Reuse processing to determine distrib elements
+                msg = message_rx.split(message)
+
+                #debug("Message " + json.dumps(msg, indent=4))
+                for pair in msg:
+                    if '=' in pair:
+                        elements = pair.split("=", 1)
+                        #debug("pair " + pair + ", len = " + str(len(elements)))
+                        if (len(elements) == 2):
+                            key = elements[0]
+                            value = elements[1]
+                            #debug(key + " = " + value)
+                            blob[key] = value
+
+                            # parse params values
+                            if key == "params":
+                                try:
+                                    # trim first and last character {} (TODO: assumes both are here, else it trims wrong character
+                                    parameters = value[1:-1]
+
+                                    params_values = {}
+
+                                    # TODO: url decode in stead of split on &? Do we need to handle escaped & characters?
+                                    for param_pair in parameters.split("&"):
+                                        # Is is a key/value pair?
+                                        if '=' in param_pair:
+                                            param_elements = param_pair.split("=", 1)
+                                            if (len(param_elements) == 2):
+                                                params_values[param_elements[0]] = param_elements[1]
+                                    blob["params_values"] = params_values
+
+                                except ValueError as e:
+                                    error("params could not be parsed")
+
+
+            except Error as e:
+                error("No message in json string: '" + line + "'")
+                continue
+
+            # b: Find an appId in the url field (name?), if present, otherwise, set it to "" (empty string)
+            appId = ""
+            if "params_values" in blob and "appId" in blob["params_values"]:
+                appId = blob["params_values"]["appId"]
+                #debug("appId " + appId)
+
+            # c: Calculate startime, from timestamp - QTime (qtime is in ms)
+            # TODO Handle timezone ? ( .tzinfo field in datetime object)
+            calltime = None
+            ts_format = '%Y-%m-%dT%H:%M:%S.%f+00:00'
+            ts = datetime.datetime.strptime(timestamp, ts_format)
+            if "QTime" in blob:
+
+                calltime = ts - datetime.timedelta(milliseconds=int(blob["QTime"]))
+                blob["calltime"] = calltime.strftime(ts_format)
+
+            # d: Write to files
+            if calltime:
+                # Save for each hour
+                timestamp_str = ts.strftime("%Y-%m-%dT%H")
+
+                # Save for each minute
+                #timestamp_str = ts.strftime("%Y-%m-%dT%H:%M")
+
+                if not output_file:
+                    # Use the timestamp of the first recorded entry in filename
+                    filename = "socl-output-%s.jsonl"%timestamp_str
+                    info("Create a new output file %s"%filename)
+                    output_file = open(os.path.join(args.folder, filename), "a")
+                elif output_file:
+                    # e: split files
+
+                    # NOTE records are not in order.
+                    # Workaround: use < for file compare. Ignore that a few timestamp entries end in the wrong filename
+
+                    new_filename = "socl-output-%s.jsonl"%timestamp_str
+                    if filename < new_filename:
+                        info("Create new file. New: %s, Old: %s" % (new_filename, filename))
+                        output_file.close()
+                        filename = new_filename
+                        output_file = open(os.path.join(args.folder, filename), "a")
+
+                # d.1 Only select, export, query calls
+                if "path" in blob and blob["path"] in ("/select", "/export", "/query"):
+                    output_file.write( json.dumps(blob, indent=4) + "\n\n")
+
+            # f: zip files when we are sure that no records need to be appended
+
+            debug("Blob " + json.dumps(blob, indent=4))
+
+            #debug("Need to store: " + timestamp + ": " + message)
+
+        if not output_file:
+            info("Close output file %s"%output_file)
+            output_file.close()
 
         info("Done")
         stop_time = datetime.datetime.now()
