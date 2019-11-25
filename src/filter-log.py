@@ -335,7 +335,26 @@ def main():
                                         if '=' in param_pair:
                                             param_elements = param_pair.split("=", 1)
                                             if (len(param_elements) == 2):
-                                                params_values[param_elements[0]] = param_elements[1]
+                                                # multiple values fields.
+                                                # TODO: do multiple values automatically?
+                                                if param_elements[0] in ("fl", "fq", "facet.field", "bq"):
+                                                    # Add array
+                                                    if param_elements[0] not in params_values:
+                                                        params_values[param_elements[0]] = []
+
+                                                    # skip empty string
+                                                    if param_elements[1]:
+                                                        params_values[param_elements[0]].append(param_elements[1])
+                                                else:
+                                                    if param_elements[0] in params_values:
+                                                        warn("value %s in %s has multiple values"%(param_elements[1], param_elements[0]))
+                                                    # overwrite if multiple values
+                                                    params_values[param_elements[0]] = param_elements[1]
+
+                                                # TODO: parse fq filter query into rec.collectionIdentifier
+                                                #    filter_query = param_elements[1]
+                                                #    params_values["collections"] = filter_query.split("+OR+")
+
                                     blob["params_values"] = params_values
 
                                 except ValueError as e:
@@ -351,6 +370,7 @@ def main():
             if "params_values" in blob and "appId" in blob["params_values"]:
                 appId = blob["params_values"]["appId"]
                 #debug("appId " + appId)
+            blob["appId"] = appId
 
             # c: Calculate startime, from timestamp - QTime (qtime is in ms)
             # TODO Handle timezone ? ( .tzinfo field in datetime object)
