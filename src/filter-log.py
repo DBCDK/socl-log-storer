@@ -304,13 +304,13 @@ def main():
             # Need to
             # a: Parse the other fields in the message field - note, sometimes hits are not present, etc.
             try:
-                #debug("Message " + message)
+                debug("Message " + message)
 
                 # TODO split does not handle spaces inside params e.g. params value for path=/update calls
                 # TODO optional: move before distrib=false test. Reuse processing to determine distrib elements
                 msg = message_rx.split(message)
 
-                #debug("Message " + json.dumps(msg, indent=4))
+                debug("Message json " + json.dumps(msg, indent=4))
                 for pair in msg:
                     if '=' in pair:
                         elements = pair.split("=", 1)
@@ -324,7 +324,7 @@ def main():
                             # parse params values
                             if key == "params":
                                 try:
-                                    # trim first and last character {} (TODO: assumes both are here, else it trims wrong character
+                                    # trim first and last character {} og JSON. TODO: assumes both are here, else it trims wrong character
                                     parameters = value[1:-1]
 
                                     params_values = {}
@@ -335,8 +335,8 @@ def main():
                                         if '=' in param_pair:
                                             param_elements = param_pair.split("=", 1)
                                             if (len(param_elements) == 2):
-                                                # multiple values fields.
-                                                # TODO: do multiple values automatically?
+                                                # multiple values fields, use arrays.
+                                                # TODO: do multiple values automatically? It would mean that output may have either string or string array
                                                 if param_elements[0] in ("fl", "fq", "facet.field", "bq"):
                                                     # Add array
                                                     if param_elements[0] not in params_values:
@@ -347,13 +347,12 @@ def main():
                                                         params_values[param_elements[0]].append(param_elements[1])
                                                 else:
                                                     if param_elements[0] in params_values:
+                                                        # value should be added to multiple values fields.
                                                         warn("value %s in %s has multiple values"%(param_elements[1], param_elements[0]))
                                                     # overwrite if multiple values
                                                     params_values[param_elements[0]] = param_elements[1]
 
-                                                # TODO: parse fq filter query into rec.collectionIdentifier
-                                                #    filter_query = param_elements[1]
-                                                #    params_values["collections"] = filter_query.split("+OR+")
+                                                # TODO: parse fq filter query into rec.collectionIdentifier?
 
                                     blob["params_values"] = params_values
 
@@ -369,7 +368,7 @@ def main():
             appId = ""
             if "params_values" in blob and "appId" in blob["params_values"]:
                 appId = blob["params_values"]["appId"]
-                #debug("appId " + appId)
+                debug("appId " + appId)
             blob["appId"] = appId
 
             # c: Calculate startime, from timestamp - QTime (qtime is in ms)
@@ -384,10 +383,10 @@ def main():
 
             # d: Write to files
             if calltime:
-                # Save for each hour
+                # Save file for each hour
                 timestamp_str = ts.strftime("%Y-%m-%dT%H")
 
-                # Save for each minute
+                # Save file for each minute
                 #timestamp_str = ts.strftime("%Y-%m-%dT%H:%M")
 
                 if not output_file:
@@ -398,9 +397,8 @@ def main():
                 elif output_file:
                     # e: split files
 
-                    # NOTE records are not in order.
+                    # NOTE records may are not in order.
                     # Workaround: use < for file compare. Ignore that a few timestamp entries end in the wrong filename
-
                     new_filename = "socl-output-%s.jsonl"%timestamp_str
                     if filename < new_filename:
                         info("Create new file. New: %s, Old: %s" % (new_filename, filename))
@@ -412,11 +410,10 @@ def main():
                 if "path" in blob and blob["path"] in ("/select", "/export", "/query"):
                     output_file.write( json.dumps(blob, indent=4) + "\n\n")
 
-            # f: zip files when we are sure that no records need to be appended
-
             debug("Blob " + json.dumps(blob, indent=4))
 
-            #debug("Need to store: " + timestamp + ": " + message)
+            # TODO: f: zip files
+
 
         if not output_file:
             info("Close output file %s"%output_file)
@@ -433,6 +430,5 @@ def main():
         error("Process failed " + Colors.RED + "FAILED" + Colors.NORMAL +
               " due to internal error (unhandled exception). Please file a bug report.")
         sys.exit(2)
-
 
 main()
