@@ -260,20 +260,16 @@ def main():
         for line in fileinput.input('-'):
 
             try:
-                blob = json.loads(line)
-            except ValueError as e:
-                # Check if this is an empty line
                 line = line.strip()
+                # Check if this is an empty line
                 if not line:
                     continue
-
-                # It wasn't empty. Now it is stripped - try again.
-                try:
-                    blob = json.loads(line)
-                except ValueError as e:
-                    # Best effort - or should we write this?
-                    error("Couldn't parse this line: '" + line + "'")
-                    error("Error messages was: " + e.message)
+                blob = json.loads(line)
+            except ValueError as e:
+                # Best effort - or should we write this?
+                error("Couldn't parse this line: '" + line + "'")
+                error("Error messages was: " + e.message)
+                continue
 
             # For now, extract
             # We only keep lines that does not have "distrib=false" in the message
