@@ -14,6 +14,7 @@ import sys
 import traceback
 import yaml
 import fileinput
+import zipfile
 
 signal.signal(signal.SIGUSR2, lambda sig, frame: code.interact())
 # The three lines above allows this program to be interrupted at any point with
@@ -397,8 +398,15 @@ def main():
                     # Workaround: use < for file compare. Ignore that a few timestamp entries end in the wrong filename
                     new_filename = "socl-output-%s.jsonl"%timestamp_str
                     if filename < new_filename:
-                        info("Create new file. New: %s, Old: %s" % (new_filename, filename))
+                        info("Create new file. New: %s, Close: %s" % (new_filename, filename))
                         output_file.close()
+
+                        # f: zip files
+                        zfile = zipfile.ZipFile(os.path.join(args.folder, filename + ".zip" ), 'w', zipfile.ZIP_DEFLATED)
+                        filepath = os.path.join(args.folder, filename)
+                        zfile.write(filepath, filename);
+                        zfile.close();
+                        os.remove(filepath);
                         filename = new_filename
                         output_file = open(os.path.join(args.folder, filename), "a")
 
@@ -407,8 +415,6 @@ def main():
                     output_file.write( json.dumps(blob, indent=4) + "\n\n")
 
             debug("Blob " + json.dumps(blob, indent=4))
-
-            # TODO: f: zip files
 
 
         if not output_file:
