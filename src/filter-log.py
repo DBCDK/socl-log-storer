@@ -258,6 +258,7 @@ def main():
 
         message_rx = re.compile("\s+")
         output_file = None
+        filename = None
         for line in fileinput.input('-'):
 
             try:
@@ -391,7 +392,8 @@ def main():
                     filename = "socl-output-%s.jsonl"%timestamp_str
                     info("Create a new output file %s"%filename)
                     output_file = open(os.path.join(args.folder, filename), "a")
-                elif output_file:
+
+                if output_file:
                     # e: split files
 
                     # NOTE records may are not in order.
@@ -417,10 +419,6 @@ def main():
             debug("Blob " + json.dumps(blob, indent=4))
 
 
-        if not output_file:
-            info("Close output file %s"%output_file)
-            output_file.close()
-
         info("Done")
         stop_time = datetime.datetime.now()
         info("Time passed: " + str(stop_time - start_time))
@@ -432,5 +430,19 @@ def main():
         error("Process failed " + Colors.RED + "FAILED" + Colors.NORMAL +
               " due to internal error (unhandled exception). Please file a bug report.")
         sys.exit(2)
+    finally:
+
+        if output_file:
+            info("Close output file %s"%output_file)
+            output_file.close()
+
+        if filename:
+            # Close last zip file
+            zfile = zipfile.ZipFile(os.path.join(args.folder, filename + ".zip" ), 'w', zipfile.ZIP_DEFLATED)
+            filepath = os.path.join(args.folder, filename)
+            zfile.write(filepath, filename);
+            zfile.close();
+            os.remove(filepath);
+
 
 main()
