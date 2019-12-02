@@ -14,6 +14,7 @@ import sys
 import traceback
 import yaml
 import fileinput
+import zipfile
 
 signal.signal(signal.SIGUSR2, lambda sig, frame: code.interact())
 # The three lines above allows this program to be interrupted at any point with
@@ -257,6 +258,7 @@ def main():
 
         message_rx = re.compile("\s+")
         output_file = None
+        filename = None
         for line in fileinput.input('-'):
 
             try:
@@ -390,15 +392,23 @@ def main():
                     filename = "socl-output-%s.jsonl"%timestamp_str
                     info("Create a new output file %s"%filename)
                     output_file = open(os.path.join(args.folder, filename), "a")
-                elif output_file:
+
+                if output_file:
                     # e: split files
 
                     # NOTE records may are not in order.
                     # Workaround: use < for file compare. Ignore that a few timestamp entries end in the wrong filename
                     new_filename = "socl-output-%s.jsonl"%timestamp_str
                     if filename < new_filename:
-                        info("Create new file. New: %s, Old: %s" % (new_filename, filename))
+                        info("Create new file. New: %s, Close: %s" % (new_filename, filename))
                         output_file.close()
+
+                        # f: zip files
+                        zfile = zipfile.ZipFile(os.path.join(args.folder, filename + ".zip" ), 'w', zipfile.ZIP_DEFLATED)
+                        filepath = os.path.join(args.folder, filename)
+                        zfile.write(filepath, filename);
+                        zfile.close();
+                        os.remove(filepath);
                         filename = new_filename
                         output_file = open(os.path.join(args.folder, filename), "a")
 
@@ -408,12 +418,6 @@ def main():
 
             debug("Blob " + json.dumps(blob, indent=4))
 
-            # TODO: f: zip files
-
-
-        if not output_file:
-            info("Close output file %s"%output_file)
-            output_file.close()
 
         info("Done")
         stop_time = datetime.datetime.now()
@@ -426,5 +430,19 @@ def main():
         error("Process failed " + Colors.RED + "FAILED" + Colors.NORMAL +
               " due to internal error (unhandled exception). Please file a bug report.")
         sys.exit(2)
+    finally:
+
+        if output_file:
+            info("Close output file %s"%output_file)
+            output_file.close()
+
+        if filename:
+            # Close last zip file
+            zfile = zipfile.ZipFile(os.path.join(args.folder, filename + ".zip" ), 'w', zipfile.ZIP_DEFLATED)
+            filepath = os.path.join(args.folder, filename)
+            zfile.write(filepath, filename);
+            zfile.close();
+            os.remove(filepath);
+
 
 main()
