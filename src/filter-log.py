@@ -12,7 +12,6 @@ import re
 import signal
 import sys
 import traceback
-import yaml
 import fileinput
 import zipfile
 
@@ -229,11 +228,6 @@ Examples:
 """
     args = parser.parse_args()
     return args
-
-class MyDumper(yaml.Dumper):
-    def increase_indent(self, flow=False, indentless=False):
-        return super(MyDumper, self).increase_indent(flow, False)
-
 
 def main():
     start_time = datetime.datetime.now()
