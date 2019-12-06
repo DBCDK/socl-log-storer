@@ -1,0 +1,8 @@
+config:
+  backtrack: .
+  prefix: socl-log-storer
+images:
+  socl-log-storer:
+    type: prod
+    context: .
+    dockerfile: Dockerfile
