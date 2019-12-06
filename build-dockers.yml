@@ -2,7 +2,7 @@ config:
   backtrack: .
   prefix: socl-log-storer
 images:
-  alma-klyngeleverance:
+  socl-log-storer:
     type: prod
     context: .
     dockerfile: Dockerfile
