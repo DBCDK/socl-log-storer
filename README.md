@@ -2,6 +2,11 @@
 
 Small utility to filter json log lines from a kafka topic, and store them in files for later analysis.
 
+Output format is the same as JSONL (http://jsonlines.org/) output of the solr log except:
+JSON is prettyprinted
+Additional data from "message" field is parsed and added as separated fields
+
+
 ## Testinput
 
 You can create a testinput like this:
@@ -54,3 +59,13 @@ log-tracer -b kafka-p01 -p 9093 -t prod_socl_cisterne | python3 src/filter-log.p
 Lines 'timestamp' to 'app' are original log data.
 Lines 'webapp' to 'calltime' added by extracted from message original data, parsing and adding extra data
 
+## Docker Image
+
+Docker image starter en log-tracer værktøj, som piper data til python script der parser, beriger og gemmer data til filer per time.
+Output folderen kan gemmes ved at mounte docker images, så "/output" folderen gemmes i en ekstern folder
+F.eks. med parameter --volume=/home/<user>/somefolder:/output
+
+
+## Jenkinsfile
+
+Jenkins filen bygger Docker image docker-os.dbc.dk/socl-log-storer:latest
