@@ -7,7 +7,7 @@ pipeline {
 
         // This is the prefix used by the docker container builds. If you need to change this,
         // you must sync it with the values from the source code. (Shell scripts, compose files, etc).
-        DOCKER_BUILD_PREFIX = "socl-log-storer"
+        DOCKER_BUILD_PREFIX = "socl-log-storer-local"
 
         // This is the prefix used for PUSH
         DOCKER_PUSH_PREFIX = "docker-os.dbc.dk"

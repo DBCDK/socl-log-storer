@@ -1,6 +1,6 @@
 config:
   backtrack: .
-  prefix: socl-log-storer
+  prefix: socl-log-storer-local
 images:
   socl-log-storer:
     type: prod

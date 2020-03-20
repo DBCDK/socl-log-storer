@@ -1,0 +1,15 @@
+# This compose file is run by Jenkins, so no static ports.
+version: '3'
+
+services:
+
+  # The image under test - using internal memcache
+  solc-log-storer:
+    image: socl-log-storer-local/socl-log-storer${DOCKER_IMAGE_TAG}
+    environment:
+      - KAFKA_BROKER=kafka-p01
+      - KAFKA_PORT=9093
+      - KAFKA_TOPIC=prod_socl_cisterne
+    volumes:
+      # Let docker-compose figure out a host mount.
+      - /output
