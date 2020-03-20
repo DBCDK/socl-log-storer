@@ -23,7 +23,7 @@ fi
 # To avoit this, we get java to write to a pipe, and python to read from it. If any of the dies, we terminate.
 
 echo "Making fifo for program to communicate"
-mkfifo myfifo | die "Unable to create fifo"
+mkfifo myfifo || die "Unable to create fifo"
 
 echo "Starting java log-tracer"
 java -jar log-tracer-1.6.jar -b $KAFKA_BROKER -p $KAFKA_PORT -t $KAFKA_TOPIC > myfifo &
