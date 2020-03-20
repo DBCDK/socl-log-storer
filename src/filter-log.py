@@ -263,16 +263,15 @@ def main():
                 blob = json.loads(line)
             except ValueError as e:
                 # Best effort - or should we write this?
-                error("Couldn't parse this line: '" + line + "'")
-                error("Error messages was: " + e.message)
+                warn("Couldn't parse this line: '" + line + "' - skipping it")
+                warn("Error messages was: " + str(e))
                 continue
 
             # For now, extract
             # We only keep lines that does not have "distrib=false" in the message
             if not "message" in blob:
-                error("A message was not found in the json string: '" + line + "'")
-                error("Error message was: " + e.message)
-                error("Line is ignored!")
+                warn("A message was not found in the json string: '" + line + "'")
+                warn("Line is ignored!")
                 continue
 
             message = blob["message"]
@@ -287,9 +286,8 @@ def main():
 
             # Extract the timestamp and other fields.
             if not "timestamp" in blob:
-                error("A timestamp was not found in the json string: '" + line + "'")
-                error("Error message was: " + e.message)
-                error("Line is ignored!")
+                warn("A timestamp was not found in the json string: '" + line + "'")
+                warn("Line is ignored!")
                 continue
             timestamp = blob["timestamp"]
 
@@ -349,11 +347,11 @@ def main():
                                     blob["params_values"] = params_values
 
                                 except ValueError as e:
-                                    error("params could not be parsed")
+                                    warn("params could not be parsed - skipping line")
+                                    continue
 
-
-            except Error as e:
-                error("No message in json string: '" + line + "'")
+            except Exception as e:
+                warn("No message in json string: '" + line + "'")
                 continue
 
             # b: Find an appId in the url field (name?), if present, otherwise, set it to "" (empty string)
